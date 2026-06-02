@@ -1,0 +1,657 @@
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+#wrap{width:100%;height:620px;background:#040c18;position:relative;overflow:hidden;font-family:monospace}
+.page{display:none;width:100%;height:100%;position:absolute;top:0;left:0;align-items:center;justify-content:center;flex-direction:column;gap:12px}
+.page.show{display:flex}
+canvas{position:absolute;top:0;left:0;display:block}
+#gc{z-index:2}
+.gbtn{font-size:13px;font-weight:bold;padding:11px 30px;border:2px solid #00ffcc;background:transparent;color:#00ffcc;cursor:pointer;letter-spacing:2px;font-family:monospace;transition:all .2s;position:relative;z-index:10}
+.gbtn:hover{background:#00ffcc22}
+.gbtn.r{border-color:#ff4466;color:#ff4466}
+.gbtn.r:hover{background:#ff446622}
+.gbtn.sm{font-size:11px;padding:7px 16px;opacity:.7}
+#hud{position:absolute;top:0;left:0;right:0;height:46px;background:rgba(4,12,24,.95);border-bottom:1px solid #00ffcc22;display:none;align-items:center;gap:10px;padding:0 12px;z-index:20}
+.hlab{font-size:10px;color:#336688}
+.hval{font-size:12px;font-weight:bold;color:#00ffcc}
+.hval.y{color:#ffcc00}.hval.r{color:#ff4466}.hval.o{color:#ff9900}
+.hpbar{width:80px;height:9px;background:#0a1828;border:1px solid #ff446644;border-radius:2px;overflow:hidden}
+.hpfill{height:100%;background:#ff4466;transition:width .3s}
+.shbar{width:65px;height:9px;background:#0a1828;border:1px solid #00ffcc44;border-radius:2px;overflow:hidden}
+.shfill{height:100%;background:#00ffcc;transition:width .3s}
+#pg_title{background:#040c18}
+.bfly{position:absolute;font-size:26px;pointer-events:none;animation:fly 4s ease-in-out infinite}
+@keyframes fly{0%,100%{transform:translateY(0)}50%{transform:translateY(-16px)}}
+.gtitle{font-size:26px;font-weight:900;color:#00ffcc;text-align:center;line-height:1.2}
+#pg_cut{background:#000;padding:0}
+#cut_vis{width:100%;height:190px;background:#030c1a;border-bottom:1px solid #00ffcc18;display:flex;align-items:center;justify-content:center;font-size:36px;letter-spacing:14px;opacity:.18;flex-shrink:0}
+.cut_box{border-left:3px solid #00ffcc;background:rgba(0,12,28,.9);padding:14px 20px;max-width:580px;width:92%;margin-top:10px}
+.cut_title{font-size:10px;color:#00ffcc;letter-spacing:3px;margin-bottom:6px}
+.cut_text{font-size:13px;color:#a8cce0;line-height:1.8;min-height:64px}
+#pg_chi{background:#000;gap:10px;text-align:center}
+.chi_num{font-size:10px;color:#00ffcc;letter-spacing:5px}
+.chi_title{font-size:30px;font-weight:900;color:#fff}
+.chi_sub{font-size:13px;color:#6a9ab0}
+.chi_line{height:2px;background:#00ffcc;width:0;transition:width 1.3s ease}
+.chi_tip{font-size:11px;color:#2a4a60;margin-top:4px}
+
+/* MUTATION & QUIZ — full scroll container */
+#pg_mut,#pg_quiz{
+  background:#040c18;
+  padding:16px;
+  overflow-y:auto;
+  overflow-x:hidden;
+  gap:10px;
+  justify-content:flex-start;
+  align-items:center;
+  z-index:30;
+}
+.mq_num{font-size:10px;color:#00ffcc;letter-spacing:3px;margin-top:8px;flex-shrink:0}
+.mq_q{font-size:13px;color:#d0e8f8;text-align:center;max-width:540px;line-height:1.75;flex-shrink:0}
+.mq_opts{display:flex;flex-direction:column;gap:7px;width:100%;max-width:540px;flex-shrink:0}
+.mopt{
+  display:block;
+  width:100%;
+  padding:12px 16px;
+  border:1.5px solid #1a3048;
+  background:rgba(0,20,44,.9);
+  color:#8ab8d0;
+  font-size:13px;
+  font-family:monospace;
+  text-align:left;
+  cursor:pointer;
+  transition:background .15s,border-color .15s,color .15s;
+  pointer-events:auto;
+  position:relative;
+  z-index:40;
+}
+.mopt:hover{border-color:#00ffcc;color:#fff;background:rgba(0,60,50,.5)}
+.mopt.ok{border-color:#00ee88 !important;color:#00ee88 !important;background:rgba(0,60,40,.5) !important;pointer-events:none}
+.mopt.no{border-color:#ff4466 !important;color:#ff4466 !important;background:rgba(60,0,20,.5) !important;pointer-events:none}
+.mopt.done{pointer-events:none}
+.exp_box{font-size:11px;color:#4a7a90;max-width:540px;text-align:left;line-height:1.7;padding:10px 14px;border-left:2px solid #00ffcc30;background:rgba(0,18,36,.7);width:100%;flex-shrink:0}
+#pg_dead{background:#000;gap:12px;text-align:center}
+#pg_end{background:#000;gap:10px;padding:20px;overflow-y:auto;text-align:center}
+.rcards{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.rcard{background:rgba(0,20,38,.8);border:1px solid #00ffcc22;padding:10px 18px}
+.rv{font-size:20px;font-weight:900;color:#00ffcc}
+.rl{font-size:10px;color:#336688;margin-top:2px}
+.edu_box{background:rgba(0,25,45,.6);border:1px solid #00ffcc18;padding:12px 18px;max-width:540px;width:100%;text-align:left}
+.edu_t{font-size:10px;color:#00ffcc;letter-spacing:3px;margin-bottom:7px}
+.edu_p{font-size:11px;color:#5a8aa0;line-height:1.85}
+#pg_info{background:#040c18;gap:8px;padding:18px;overflow-y:auto}
+.icard{max-width:560px;width:100%;background:rgba(0,15,32,.8);border:1px solid #00ffcc18;padding:11px 15px}
+.icard h3{color:#00ffcc;font-size:10px;letter-spacing:2px;margin-bottom:4px}
+.icard p{font-size:11px;color:#6a9ab0;line-height:1.7}
+</style>
+
+<div id="wrap">
+<canvas id="bg"></canvas>
+<canvas id="gc"></canvas>
+
+<div id="hud">
+  <span class="hlab">HP</span>
+  <div class="hpbar"><div class="hpfill" id="hf" style="width:100%"></div></div>
+  <span class="hlab">SHIELD</span>
+  <div class="shbar"><div class="shfill" id="sf" style="width:0%"></div></div>
+  <span class="hval y">* <span id="hsc">0</span></span>
+  <span class="hval" id="hsh">S:0</span>
+  <span class="hval o" id="htm">T:30s</span>
+  <span class="hval r" id="hch" style="margin-left:auto;font-size:10px">CH.1</span>
+</div>
+
+<!-- TITLE -->
+<div id="pg_title" class="page show">
+  <div class="bfly" style="left:7%;top:15%">&#x1F9A0;</div>
+  <div class="bfly" style="left:82%;top:18%;animation-delay:1.3s">&#x1F9A0;</div>
+  <div class="bfly" style="left:10%;top:70%;animation-delay:.7s">&#x1F9A0;</div>
+  <div class="bfly" style="left:80%;top:72%;animation-delay:2s">&#x1F9A0;</div>
+  <div style="font-size:50px;animation:fly 3s ease-in-out infinite">&#x1F9A0;</div>
+  <div style="font-size:10px;color:#336688;letter-spacing:4px">EDUCATIONAL BIOLOGY GAME</div>
+  <div class="gtitle">ANTIBIOTIC ESCAPE<br><span style="font-size:15px;color:#6a9ab0;font-weight:normal">Mutation Survival</span></div>
+  <div style="font-size:11px;color:#2a4a60;max-width:340px;text-align:center;line-height:1.7">Jadilah bakteri yang bertahan dari antibiotik melalui mutasi dan plasmid!</div>
+  <button class="gbtn" onclick="startGame()">&#9658; MULAI GAME</button>
+  <button class="gbtn sm" onclick="showPage('pg_info')">? CARA BERMAIN</button>
+</div>
+
+<!-- INFO -->
+<div id="pg_info" class="page">
+  <div style="font-size:11px;color:#00ffcc;letter-spacing:4px">CARA BERMAIN</div>
+  <div class="icard"><h3>CH.1 — DODGE (20 detik)</h3><p>SPASI atau KLIK untuk lompat. Hindari pil merah (AB) dan racun hijau (TOX).</p></div>
+  <div class="icard"><h3>CH.2 — PLASMID HUNT (25 detik)</h3><p>Kumpulkan lingkaran hijau P = +shield, lingkaran biru D = +skor. Hindari AB dan TOX.</p></div>
+  <div class="icard"><h3>MUTATION LAB</h3><p>4 soal pilihan ganda biologi. Klik tombol A/B/C/D untuk menjawab. Benar = +skor, Salah = -HP.</p></div>
+  <div class="icard"><h3>CH.4 — ANTIBIOTIC STORM (30 detik)</h3><p>Semua musuh 2x lebih cepat! Gunakan shield dari plasmid untuk bertahan.</p></div>
+  <div class="icard"><h3>KUIS AKHIR (6 soal)</h3><p>Klik pilihan jawaban. Setiap jawaban benar = +80 skor. Ada penjelasan ilmiah tiap soal.</p></div>
+  <button class="gbtn sm" onclick="showPage('pg_title')">&#8592; KEMBALI</button>
+</div>
+
+<!-- CUTSCENE -->
+<div id="pg_cut" class="page">
+  <div id="cut_vis">&#x1F52C;&#x2697;&#xFE0F;&#x1F9EA;</div>
+  <div class="cut_box">
+    <div class="cut_title" id="ct_title">NARASI</div>
+    <div class="cut_text" id="ct_text"></div>
+  </div>
+  <button class="gbtn" style="margin-top:10px;font-size:12px" onclick="nextNarr()">LANJUT &#9658;</button>
+</div>
+
+<!-- CHAPTER INTRO -->
+<div id="pg_chi" class="page">
+  <div class="chi_num" id="ci_num">CHAPTER 1</div>
+  <div class="chi_title" id="ci_title">THE FIRST ATTACK</div>
+  <div class="chi_line" id="ci_line"></div>
+  <div class="chi_sub" id="ci_sub">Hindari Antibiotik!</div>
+  <div class="chi_tip" id="ci_tip"></div>
+</div>
+
+<!-- GAMEPLAY -->
+<div id="pg_game" class="page" style="justify-content:flex-start;z-index:1"></div>
+
+<!-- MUTATION -->
+<div id="pg_mut" class="page">
+  <div style="font-size:32px;flex-shrink:0;margin-top:4px">&#x1F9EC;</div>
+  <div class="mq_num" id="mq_num">PERTANYAAN 1 DARI 4</div>
+  <div class="mq_q" id="mq_q">Memuat soal...</div>
+  <div class="mq_opts" id="mq_opts"></div>
+  <div class="exp_box" id="mq_exp" style="display:none"></div>
+</div>
+
+<!-- QUIZ -->
+<div id="pg_quiz" class="page">
+  <div style="font-size:11px;color:#00ffcc;letter-spacing:3px;flex-shrink:0;margin-top:4px">&#x1F52C; KUIS AKHIR</div>
+  <div style="font-size:10px;color:#336688;flex-shrink:0" id="qz_num">Soal 1 dari 6</div>
+  <div class="mq_q" id="qz_q">Memuat soal...</div>
+  <div class="mq_opts" id="qz_opts"></div>
+  <div class="exp_box" id="qz_exp" style="display:none"></div>
+  <button class="gbtn" id="btn_qnext" style="display:none;font-size:12px;flex-shrink:0" onclick="nextQuiz()">LANJUT &#9658;</button>
+</div>
+
+<!-- DEAD -->
+<div id="pg_dead" class="page">
+  <div style="font-size:52px">&#x1F480;</div>
+  <div style="font-size:24px;font-weight:900;color:#ff4466">BAKTERI MATI</div>
+  <div style="font-size:12px;color:#7a9ab0;max-width:360px;line-height:1.8;text-align:center" id="dead_msg"></div>
+  <button class="gbtn r" onclick="retryLevel()">&#8617; COBA LAGI</button>
+  <button class="gbtn sm" onclick="goMenu()">MENU UTAMA</button>
+</div>
+
+<!-- ENDING -->
+<div id="pg_end" class="page">
+  <div style="font-size:48px">&#x1F3C6;</div>
+  <div style="font-size:26px;font-weight:900;color:#00ffcc">BAKTERI SELAMAT!</div>
+  <div style="font-size:19px;font-weight:bold;color:#ffcc00">Skor: <span id="end_sc">0</span></div>
+  <div class="rcards">
+    <div class="rcard"><div class="rv" id="r_mut">0/4</div><div class="rl">Mutasi Benar</div></div>
+    <div class="rcard"><div class="rv" id="r_qz">0/6</div><div class="rl">Kuis Benar</div></div>
+    <div class="rcard"><div class="rv" id="r_gr">A</div><div class="rl">Nilai</div></div>
+  </div>
+  <div class="edu_box">
+    <div class="edu_t">KESIMPULAN ILMIAH</div>
+    <div class="edu_p">
+      Resistensi antibiotik terjadi melalui mutasi acak DNA dan transfer gen horizontal.<br>
+      Plasmid membawa gen resistensi yang dapat berpindah antar bakteri (HGT).<br>
+      Seleksi alam memastikan bakteri paling adaptif bertahan dan berkembang biak.<br>
+      Penggunaan antibiotik berlebihan mempercepat evolusi bakteri resisten!
+    </div>
+  </div>
+  <button class="gbtn" onclick="goMenu()">&#8962; MAIN LAGI</button>
+</div>
+</div>
+
+<script>
+// ── globals ──────────────────────────────────────────────────────────────
+var W=0,H=0;
+var bgC=document.getElementById('bg'),bgX=bgC.getContext('2d');
+var gc=document.getElementById('gc'),ctx=gc.getContext('2d');
+
+function resize(){
+  W=document.getElementById('wrap').clientWidth||680; H=620;
+  bgC.width=gc.width=W; bgC.height=gc.height=H;
+}
+resize(); window.addEventListener('resize',resize);
+
+function showPage(id){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('show');});
+  document.getElementById(id).classList.add('show');
+  document.getElementById('hud').style.display=(id==='pg_game')?'flex':'none';
+}
+
+// ── game state ────────────────────────────────────────────────────────────
+var hp=3,shield=0,score=0,chapter=1;
+var mutScore=0,mutIdx=0,quizScore=0,quizIdx=0;
+var running=false,frame=0,raf=null;
+var levelTimer=0,levelMax=0,retryChap=1;
+var player={x:82,y:0,vy:0,onG:true,imm:0,trail:[]};
+var obstacles=[],items=[],particles=[];
+var spawnT=0,itemT=0;
+var GY=0;
+
+function updHUD(){
+  document.getElementById('hf').style.width=(hp/3*100)+'%';
+  document.getElementById('sf').style.width=(shield/5*100)+'%';
+  document.getElementById('hsc').textContent=score;
+  document.getElementById('hsh').textContent='S:'+shield;
+}
+
+// ── narratives ────────────────────────────────────────────────────────────
+var NARRS={
+  open:[
+    {t:'LABORATORIUM, 23:47',v:'&#x1F52C;&#x2697;&#xFE0F;&#x1F9EA;',tx:'Di sebuah laboratorium, ilmuwan menguji antibiotik generasi terbaru untuk membasmi koloni bakteri berbahaya yang menginfeksi ribuan pasien...'},
+    {t:'EKSPERIMEN DIMULAI',v:'&#x1F48A;&#x1F48A;&#x1F48A;',tx:'Antibiotik dosis tinggi disuntikkan ke dalam cawan petri. ALARM berbunyi!\n"Target: eliminasi 100% koloni bakteri dalam 60 menit."'},
+    {t:'KOLONI DISERANG',v:'&#x1F9A0;&#x1F480;&#x1F9A0;',tx:'Ribuan bakteri mulai mati. Membran sel hancur. Namun di sudut cawan petri, ada yang berbeda — sebuah bakteri dengan mutasi khusus.'},
+    {t:'KAMU ADALAH YANG BERBEDA',v:'&#x1F9A0;&#x26A1;&#x1F9EC;',tx:'Hanya bakteri dengan perubahan genetik tertentu yang dapat bertahan hidup.\n\nKamu memiliki apa yang tidak dimiliki yang lain. Buktikan kemampuanmu dan selamatkan koloni!'},
+  ],
+  a1:[{t:'SELEKSI ALAM BEKERJA',v:'&#x1F9A0;&#x2705;&#x1F4AA;',tx:'Tidak semua bakteri mampu bertahan.\n\nKamu lolos dari gelombang pertama. Seleksi alam sedang memilih — hanya yang paling adaptif yang melanjutkan perjalanan!'}],
+  a2:[{t:'TRANSFER GEN HORIZONTAL',v:'&#x1F9EC;&#x2192;&#x1F9A0;',tx:'Plasmid yang kamu kumpulkan membawa gen resistensi berharga!\n\nTransfer gen horizontal — mekanisme revolusioner evolusi bakteri — memperkuat resistensimu!'}],
+  a3:[{t:'MUTASI: PEDANG BERMATA DUA',v:'&#x1F9EC;&#x1F52C;&#x2728;',tx:'Kamu telah memilih mutasi yang tepat!\n\nDinding sel menguat, enzim resistensi aktif, pompa efluks bekerja penuh. Bersiap untuk serangan terakhir!'}],
+  a4:[{t:'RESISTENSI TERBENTUK',v:'&#x1F451;&#x1F9A0;&#x1F6E1;',tx:'Melalui seleksi alam, transfer gen, dan mutasi — koloni barumu kini resisten terhadap antibiotik ini.\n\nNamun ini hanya awal dari perlombaan evolusi yang tak berujung!'}],
+};
+var currNarrs=[],narrIdx=0,narrDone=null,typingIv=null;
+
+function showCutscene(narrs,done){
+  currNarrs=narrs; narrIdx=0; narrDone=done;
+  showPage('pg_cut'); renderNarr();
+}
+function renderNarr(){
+  var n=currNarrs[narrIdx];
+  if(!n){if(narrDone)narrDone(); return;}
+  document.getElementById('ct_title').textContent=n.t;
+  document.getElementById('cut_vis').innerHTML=n.v;
+  var el=document.getElementById('ct_text'); el.textContent='';
+  if(typingIv)clearInterval(typingIv);
+  var i=0,txt=n.tx;
+  typingIv=setInterval(function(){el.textContent+=txt[i]||'';i++;if(i>=txt.length)clearInterval(typingIv);},18);
+}
+function nextNarr(){
+  narrIdx++;
+  if(narrIdx>=currNarrs.length){if(narrDone)narrDone();return;}
+  renderNarr();
+}
+
+// ── chapter intro ─────────────────────────────────────────────────────────
+var CHI=[
+  {num:'CHAPTER 1',title:'THE FIRST ATTACK',sub:'Hindari Antibiotik!',tip:'SPASI / KLIK untuk melompat — Bertahan 20 detik!'},
+  {num:'CHAPTER 2',title:'THE HIDDEN PLASMID',sub:'Kumpulkan DNA & Plasmid!',tip:'P=+Shield  D=+Skor  Hindari AB dan TOX — 25 detik!'},
+  {num:'MUTATION LAB',title:'MUTATION CHOICE',sub:'Pilih Mutasi yang Tepat!',tip:'4 Soal biologi — Klik tombol untuk menjawab'},
+  {num:'CHAPTER 4',title:'ANTIBIOTIC STORM',sub:'Serangan Maksimum!',tip:'Kecepatan 2x — Gunakan shield! — 30 detik!'},
+];
+function showChapIntro(idx,fn){
+  var c=CHI[idx];
+  document.getElementById('ci_num').textContent=c.num;
+  document.getElementById('ci_title').textContent=c.title;
+  document.getElementById('ci_sub').textContent=c.sub;
+  document.getElementById('ci_tip').textContent=c.tip;
+  var line=document.getElementById('ci_line');
+  line.style.width='0'; showPage('pg_chi');
+  setTimeout(function(){line.style.width='250px';},60);
+  setTimeout(fn,2500);
+}
+
+// ── MUTATION ──────────────────────────────────────────────────────────────
+var MUTS=[
+  {q:'Mutasi mana yang membantu bakteri bertahan terhadap antibiotik beta-laktam seperti penisilin?',
+   opts:['A. Menghasilkan enzim beta-laktamase yang menghancurkan antibiotik',
+         'B. DNA inti bakteri rusak total dan tidak berfungsi',
+         'C. Bakteri kehilangan semua membran sel pelindung',
+         'D. Bakteri tidak dapat berkembang biak sama sekali'],
+   ans:0,exp:'Beta-laktamase adalah enzim yang memecah cincin beta-laktam pada penisilin, menonaktifkannya sebelum bisa menyerang dinding sel bakteri. Ini mekanisme resistensi paling umum!'},
+  {q:'Apa yang dimaksud dengan "pompa efluks" dalam konteks resistensi antibiotik?',
+   opts:['A. Alat laboratorium untuk memompa larutan kimia berbahaya',
+         'B. Protein membran yang memompa antibiotik keluar dari sel bakteri',
+         'C. Enzim yang memecah DNA antibiotik di dalam sel',
+         'D. Penebalan dinding sel bakteri secara alami'],
+   ans:1,exp:'Pompa efluks adalah protein transpor di membran bakteri yang aktif mengeluarkan antibiotik dari dalam sel, menjaga konsentrasi antibiotik tetap rendah sehingga tidak membunuh bakteri.'},
+  {q:'Mengapa bakteri bisa mendapat resistensi dari bakteri lain yang tidak berkerabat?',
+   opts:['A. Melalui reproduksi seksual seperti hewan tingkat tinggi',
+         'B. Transfer gen horizontal: konjugasi, transformasi, atau transduksi',
+         'C. Dengan memakan bakteri lain yang sudah resisten',
+         'D. Melalui mutasi spontan yang selalu terjadi bersamaan'],
+   ans:1,exp:'Transfer Gen Horizontal (HGT) memungkinkan bakteri berbagi materi genetik lintas spesies. Konjugasi (plasmid langsung), transformasi (DNA bebas), dan transduksi (via virus fag) adalah tiga jalur HGT.'},
+  {q:'Apa yang terjadi jika bakteri mengalami mutasi pada gen target antibiotik?',
+   opts:['A. Bakteri langsung mati karena perubahan genetik',
+         'B. Antibiotik tidak dapat berikatan dengan targetnya sehingga tidak efektif',
+         'C. Bakteri tumbuh lebih lambat dari biasanya',
+         'D. Antibiotik menjadi lebih kuat dan efektif'],
+   ans:1,exp:'Jika gen yang mengkode target antibiotik bermutasi, struktur protein target berubah sehingga antibiotik tidak bisa menempel dan bekerja. Contoh: mutasi rpoB menyebabkan resistensi rifampisin.'},
+];
+
+function startMutation(){mutIdx=0;mutScore=0;showMutQ();}
+
+function showMutQ(){
+  if(mutIdx>=MUTS.length){
+    score+=mutScore*60;
+    showCutscene(NARRS.a3,function(){showChapIntro(3,function(){startLevel(4);});});
+    return;
+  }
+  var m=MUTS[mutIdx];
+  document.getElementById('mq_num').textContent='PERTANYAAN '+(mutIdx+1)+' DARI '+MUTS.length;
+  document.getElementById('mq_q').textContent=m.q;
+  document.getElementById('mq_exp').style.display='none';
+  var el=document.getElementById('mq_opts');
+  el.innerHTML='';
+  m.opts.forEach(function(optText,i){
+    var b=document.createElement('button');
+    b.className='mopt';
+    b.textContent=optText;
+    b.setAttribute('data-idx',i);
+    b.addEventListener('click',function(){
+      answerMut(parseInt(this.getAttribute('data-idx')));
+    });
+    el.appendChild(b);
+  });
+  showPage('pg_mut');
+}
+
+function answerMut(idx){
+  var m=MUTS[mutIdx];
+  var btns=document.querySelectorAll('#mq_opts .mopt');
+  btns.forEach(function(b){b.classList.add('done');});
+  var chosen=btns[idx];
+  var correct=btns[m.ans];
+  if(idx===m.ans){
+    chosen.classList.add('ok');
+    mutScore++; score+=60;
+  } else {
+    chosen.classList.add('no');
+    correct.classList.add('ok');
+    hp=Math.max(1,hp-1);
+    updHUD();
+  }
+  document.getElementById('mq_exp').textContent='Penjelasan: '+m.exp;
+  document.getElementById('mq_exp').style.display='block';
+  mutIdx++;
+  setTimeout(showMutQ,2400);
+}
+
+// ── QUIZ ──────────────────────────────────────────────────────────────────
+var QUIZ=[
+  {q:'Apa fungsi utama plasmid pada bakteri?',
+   opts:['A. Memproduksi energi melalui respirasi sel',
+         'B. Membawa dan mentransfer gen resistensi antibiotik',
+         'C. Mengatur pembelahan sel inti bakteri',
+         'D. Melindungi inti sel dari radiasi sinar UV'],
+   ans:1,exp:'Plasmid adalah DNA sirkuler kecil di luar kromosom utama yang membawa gen resistensi dan dapat ditransfer antar bakteri melalui konjugasi. Satu plasmid bisa membawa beberapa gen resistensi sekaligus.'},
+  {q:'Apa yang dimaksud mutasi titik (point mutation)?',
+   opts:['A. Perubahan seluruh kromosom bakteri sekaligus',
+         'B. Penggantian, penyisipan, atau penghapusan satu nukleotida DNA',
+         'C. Rekombinasi seluruh genom bakteri dengan organisme lain',
+         'D. Hilangnya plasmid dari sel secara permanen'],
+   ans:1,exp:'Mutasi titik adalah perubahan pada satu pasang basa DNA. Jika terjadi pada gen target antibiotik, antibiotik tidak bisa berikatan dan bakteri menjadi resisten. Dampaknya bisa besar meski perubahannya kecil.'},
+  {q:'Mengapa bakteri bisa resisten terhadap antibiotik?',
+   opts:['A. Antibiotik melemah seiring waktu dan tidak efektif lagi',
+         'B. Bakteri bermutasi atau mendapat plasmid resistensi dan bertahan via seleksi alam',
+         'C. Antibiotik hanya bekerja satu kali saja pada bakteri',
+         'D. Bakteri berhibernasi saat terpapar antibiotik'],
+   ans:1,exp:'Resistensi terjadi karena variasi genetik alami (mutasi/HGT) + seleksi alam. Bakteri yang kebetulan memiliki gen resistensi bertahan, berkembang biak, dan mewariskan sifat tersebut ke generasi berikutnya.'},
+  {q:'Apa dampak utama penggunaan antibiotik yang tidak tepat/berlebihan?',
+   opts:['A. Membunuh semua bakteri lebih cepat dan tuntas',
+         'B. Memberi tekanan seleksi yang mempercepat evolusi bakteri resisten',
+         'C. Mencegah terjadinya mutasi pada bakteri',
+         'D. Membuat antibiotik lebih efektif dari waktu ke waktu'],
+   ans:1,exp:'Antibiotik berlebihan menciptakan tekanan seleksi ekstrem yang mengeliminasi bakteri sensitif dan memilih bakteri resisten, mempercepat penyebaran gen resistensi dalam seluruh populasi bakteri.'},
+  {q:'Proses apa ketika bakteri mati melepas DNA yang lalu diserap bakteri lain?',
+   opts:['A. Konjugasi — transfer plasmid langsung sel ke sel',
+         'B. Transduksi — transfer gen melalui virus bakteriofag',
+         'C. Transformasi — penyerapan DNA bebas dari lingkungan',
+         'D. Reproduksi aseksual biner biasa'],
+   ans:2,exp:'Transformasi adalah pengambilan DNA bebas dari lingkungan oleh bakteri kompeten. Jika DNA membawa gen resistensi, bakteri yang menyerapnya bisa langsung menjadi resisten terhadap antibiotik tersebut.'},
+  {q:'Apa yang dimaksud dengan Multi-Drug Resistance (MDR)?',
+   opts:['A. Bakteri yang hanya tahan terhadap satu jenis antibiotik',
+         'B. Bakteri yang resisten terhadap tiga atau lebih kelas antibiotik berbeda',
+         'C. Bakteri yang menghasilkan banyak racun secara bersamaan',
+         'D. Bakteri yang tumbuh jauh lebih cepat dari normal'],
+   ans:1,exp:'MDR adalah bakteri yang resisten terhadap tiga atau lebih kelas antibiotik berbeda. Ini terjadi karena akumulasi berbagai mekanisme resistensi melalui mutasi dan HGT berulang — sangat sulit diobati!'},
+];
+
+function startQuiz(){quizIdx=0;quizScore=0;showQuizQ();}
+
+function showQuizQ(){
+  if(quizIdx>=QUIZ.length){showEnding();return;}
+  var q=QUIZ[quizIdx];
+  document.getElementById('qz_num').textContent='Soal '+(quizIdx+1)+' dari '+QUIZ.length;
+  document.getElementById('qz_q').textContent=q.q;
+  document.getElementById('qz_exp').style.display='none';
+  document.getElementById('btn_qnext').style.display='none';
+  var el=document.getElementById('qz_opts');
+  el.innerHTML='';
+  q.opts.forEach(function(optText,i){
+    var b=document.createElement('button');
+    b.className='mopt';
+    b.textContent=optText;
+    b.setAttribute('data-idx',i);
+    b.addEventListener('click',function(){
+      answerQuiz(parseInt(this.getAttribute('data-idx')));
+    });
+    el.appendChild(b);
+  });
+  showPage('pg_quiz');
+}
+
+function answerQuiz(idx){
+  var q=QUIZ[quizIdx];
+  var btns=document.querySelectorAll('#qz_opts .mopt');
+  btns.forEach(function(b){b.classList.add('done');});
+  var chosen=btns[idx];
+  var correct=btns[q.ans];
+  if(idx===q.ans){chosen.classList.add('ok');quizScore++;score+=80;}
+  else{chosen.classList.add('no');correct.classList.add('ok');}
+  document.getElementById('qz_exp').textContent='Penjelasan: '+q.exp;
+  document.getElementById('qz_exp').style.display='block';
+  var nb=document.getElementById('btn_qnext');
+  nb.style.display='block';
+  nb.textContent=quizIdx+1<QUIZ.length?'SOAL BERIKUTNYA >':'LIHAT HASIL >';
+  quizIdx++;
+}
+function nextQuiz(){showQuizQ();}
+
+// ── ending ────────────────────────────────────────────────────────────────
+function showEnding(){
+  var tot=mutScore+quizScore,max=MUTS.length+QUIZ.length,p=tot/max;
+  var g=p>=.9?'A+':p>=.8?'A':p>=.7?'B+':p>=.6?'B':p>=.5?'C':'D';
+  document.getElementById('end_sc').textContent=score;
+  document.getElementById('r_mut').textContent=mutScore+'/'+MUTS.length;
+  document.getElementById('r_qz').textContent=quizScore+'/'+QUIZ.length;
+  document.getElementById('r_gr').textContent=g;
+  showPage('pg_end');
+}
+
+// ── game engine ───────────────────────────────────────────────────────────
+function startLevel(ch){
+  chapter=ch; retryChap=ch;
+  obstacles=[]; items=[]; particles=[];
+  spawnT=0; itemT=0; frame=0;
+  var times={1:20*60,2:25*60,4:30*60};
+  levelMax=times[ch]||20*60; levelTimer=levelMax;
+  GY=H-46-80;
+  player={x:82,y:GY,vy:0,onG:true,imm:0,trail:[]};
+  running=true;
+  document.getElementById('hch').textContent='CH.'+ch;
+  updHUD();
+  showPage('pg_game');
+  loop();
+}
+function stopGame(){running=false;}
+
+function loop(){
+  if(!running)return;
+  frame++;
+  update();
+  drawBg();
+  render();
+  requestAnimationFrame(loop);
+}
+
+function drawBg(){
+  bgX.fillStyle='#040c18'; bgX.fillRect(0,0,W,H);
+  bgX.strokeStyle='rgba(0,80,140,.07)'; bgX.lineWidth=1;
+  for(var x=0;x<W;x+=44){bgX.beginPath();bgX.moveTo(x,0);bgX.lineTo(x,H);bgX.stroke();}
+  for(var y=0;y<H;y+=44){bgX.beginPath();bgX.moveTo(0,y);bgX.lineTo(W,y);bgX.stroke();}
+}
+
+function update(){
+  if(!running)return;
+  GY=H-46-80;
+  levelTimer--;
+  if(levelTimer<=0){running=false;levelDone();return;}
+  document.getElementById('htm').textContent='T:'+Math.ceil(levelTimer/60)+'s';
+
+  player.vy+=.72; player.y+=player.vy;
+  if(player.y>=GY){player.y=GY;player.vy=0;player.onG=true;}else player.onG=false;
+  if(player.imm>0)player.imm--;
+
+  player.trail.unshift({x:player.x+16,y:player.y+16});
+  if(player.trail.length>8)player.trail.pop();
+
+  spawnT++;
+  var ch=chapter;
+  var rate=ch===4?36:ch===2?64:74;
+  var elapsed=levelMax-levelTimer;
+  rate=Math.max(20,rate-Math.floor(elapsed/200));
+  if(spawnT>=rate){
+    spawnT=0;
+    var spd=ch===4?4.5+Math.random()*3:2.8+Math.random()*2;
+    var ys=[GY,GY-65];
+    if(ch===4)ys.push(GY-120);
+    var yy=ys[Math.floor(Math.random()*ys.length)];
+    obstacles.push({x:W+20,y:yy,spd:spd,type:(ch===4&&Math.random()<.4)?'tox':'ab'});
+  }
+
+  if((ch===2||ch===4)){
+    itemT++;
+    if(itemT>=82){
+      itemT=0;
+      items.push({x:W+20,y:GY-50-Math.random()*120,spd:2+Math.random()*.8,type:Math.random()<.55?'pl':'dna',pulse:0});
+    }
+  }
+
+  for(var i=obstacles.length-1;i>=0;i--){
+    var o=obstacles[i]; o.x-=o.spd;
+    if(o.x<-50){obstacles.splice(i,1);continue;}
+    if(player.imm===0&&hitTest(player,o)){
+      if(shield>0){shield=Math.max(0,shield-1);player.imm=85;burst(player.x+16,player.y+16,'#00ffcc');ftxt(player.x,player.y-16,'SHIELD!','#00ffcc');}
+      else{hp--;player.imm=85;burst(player.x+16,player.y+16,'#ff4466');ftxt(player.x,player.y-16,'-HP','#ff4466');if(hp<=0){running=false;setTimeout(showDead,500);return;}}
+      obstacles.splice(i,1); updHUD();
+    }
+  }
+  for(var j=items.length-1;j>=0;j--){
+    var it=items[j]; it.x-=it.spd; it.pulse+=.12;
+    if(it.x<-40){items.splice(j,1);continue;}
+    if(hitTest(player,it)){
+      if(it.type==='pl'){shield=Math.min(5,shield+1);score+=35;ftxt(it.x,it.y-10,'+PLASMID','#00ffcc');burst(it.x,it.y,'#00ffcc');}
+      else{score+=20;ftxt(it.x,it.y-10,'+DNA','#88aaff');burst(it.x,it.y,'#6688ff');}
+      items.splice(j,1); updHUD();
+    }
+  }
+  if(frame%50===0){score++;updHUD();}
+  for(var k=particles.length-1;k>=0;k--){
+    var p=particles[k]; p.x+=p.vx;p.y+=p.vy;p.vy+=.05;p.life--;
+    if(p.life<=0)particles.splice(k,1);
+  }
+}
+
+function hitTest(a,b){var pad=8;return a.x+pad<b.x+24&&a.x+24>b.x+pad&&a.y+pad<b.y+24&&a.y+24>b.y+pad;}
+
+function burst(x,y,col){
+  for(var i=0;i<8;i++){var a=Math.random()*Math.PI*2,s=1.5+Math.random()*2.5;particles.push({x:x,y:y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1,life:24,maxLife:24,col:col,txt:null,r:2.5});}
+}
+function ftxt(x,y,t,col){particles.push({x:x,y:y,vx:0,vy:-1.6,life:42,maxLife:42,col:col,txt:t,r:0});}
+
+function render(){
+  ctx.clearRect(0,0,W,H);
+  var gy=H-46-80;
+
+  ctx.fillStyle='rgba(0,30,60,.8)'; ctx.fillRect(0,gy+32,W,H-gy-32);
+  ctx.strokeStyle='rgba(0,220,180,.2)'; ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(0,gy+32);ctx.lineTo(W,gy+32);ctx.stroke();
+
+  var tp=levelTimer/levelMax;
+  ctx.fillStyle='#020810';ctx.fillRect(0,H-5,W,5);
+  ctx.fillStyle=tp>.5?'#00ffcc':tp>.25?'#ffaa00':'#ff4466';
+  ctx.fillRect(0,H-5,W*tp,5);
+
+  items.forEach(function(it){
+    var pulse=Math.sin(it.pulse)*.07;
+    ctx.save();ctx.translate(it.x+11,it.y+11);ctx.scale(1+pulse,1+pulse);
+    if(it.type==='pl'){
+      ctx.fillStyle='#00ee88';ctx.beginPath();ctx.arc(0,0,11,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='#00ffcc';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(0,0,11,0,Math.PI*2);ctx.stroke();
+      ctx.fillStyle='#003322';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('P',0,0);
+    } else {
+      ctx.fillStyle='#4466ff';ctx.beginPath();ctx.arc(0,0,10,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='#88aaff';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(0,0,10,0,Math.PI*2);ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('D',0,0);
+    }
+    ctx.restore();
+  });
+
+  obstacles.forEach(function(o){
+    ctx.save();ctx.translate(o.x+12,o.y+12);
+    if(o.type==='ab'){
+      ctx.fillStyle='#ff3366';ctx.strokeStyle='#ff88bb';
+      ctx.beginPath();ctx.roundRect(-11,-6,22,12,6);ctx.fill();ctx.lineWidth=1.5;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 8px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('AB',0,0);
+    } else {
+      ctx.fillStyle='#33bb22';ctx.strokeStyle='#88ee44';
+      ctx.beginPath();ctx.arc(0,0,12,0,Math.PI*2);ctx.fill();ctx.lineWidth=1.5;ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 8px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('TOX',0,0);
+    }
+    ctx.restore();
+  });
+
+  player.trail.forEach(function(t,i){
+    ctx.fillStyle='rgba(0,255,200,'+(0.12*(1-i/player.trail.length))+')';
+    ctx.beginPath();ctx.arc(t.x,t.y,6*(1-i/player.trail.length),0,Math.PI*2);ctx.fill();
+  });
+
+  var blink=player.imm>0?Math.sin(frame*.3)>0:true;
+  if(blink){
+    ctx.save();ctx.translate(player.x+16,player.y+16);
+    ctx.fillStyle='#44dd88';ctx.beginPath();ctx.arc(0,0,14,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#00ffcc';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,14,0,Math.PI*2);ctx.stroke();
+    ctx.fillStyle='#002211';ctx.beginPath();ctx.arc(-5,-3,2.5,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(5,-3,2.5,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#002211';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(0,1,5,.2,Math.PI-.2);ctx.stroke();
+    ctx.restore();
+  }
+  if(shield>0){
+    ctx.strokeStyle='rgba(0,255,200,'+(0.28+Math.sin(frame*.12)*.15)+')';ctx.lineWidth=2.5;
+    ctx.beginPath();ctx.arc(player.x+16,player.y+16,28,0,Math.PI*2);ctx.stroke();
+  }
+
+  particles.forEach(function(p){
+    var a=p.life/p.maxLife;ctx.globalAlpha=a;
+    if(p.txt){ctx.fillStyle=p.col;ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(p.txt,p.x,p.y);}
+    else{ctx.fillStyle=p.col;ctx.beginPath();ctx.arc(p.x,p.y,p.r*a,0,Math.PI*2);ctx.fill();}
+    ctx.globalAlpha=1;
+  });
+
+  ctx.fillStyle='rgba(0,200,120,.4)';ctx.font='10px monospace';ctx.textAlign='left';ctx.textBaseline='top';
+  if(chapter===2||chapter===4){ctx.fillText('P=Plasmid(+shield)  D=DNA(+skor)  AB=Antibiotik(-HP)  TOX=Racun(-HP)',8,52);}
+}
+
+function levelDone(){
+  score+=150+(shield*20);
+  var ch=chapter;
+  if(ch===1)showCutscene(NARRS.a1,function(){showChapIntro(1,function(){hp=Math.min(3,hp+1);startLevel(2);});});
+  else if(ch===2)showCutscene(NARRS.a2,function(){showChapIntro(2,startMutation);});
+  else if(ch===4)showCutscene(NARRS.a4,startQuiz);
+}
+
+function showDead(){
+  var msgs={1:'Bakteri mati karena tidak memiliki resistensi. Seleksi alam tidak memihakmu — coba lagi!',2:'Tanpa cukup plasmid, bakteri tidak mampu bertahan. Kumpulkan lebih banyak plasmid!',4:'Gelombang antibiotik yang dahsyat mengalahkanmu. Gunakan shield lebih bijak!'};
+  document.getElementById('dead_msg').textContent=msgs[chapter]||'Bakteri tidak berhasil bertahan.';
+  showPage('pg_dead');
+}
+
+// ── controls ──────────────────────────────────────────────────────────────
+function jump(){if(!running)return;if(player.onG){player.vy=-13.5;player.onG=false;}}
+document.addEventListener('keydown',function(e){if(e.code==='Space'||e.code==='ArrowUp'){e.preventDefault();jump();}});
+document.getElementById('pg_game').addEventListener('click',jump);
+document.addEventListener('touchstart',function(e){if(document.getElementById('pg_game').classList.contains('show')){e.preventDefault();jump();}},{passive:false});
+
+function retryLevel(){hp=Math.max(2,hp);startLevel(retryChap);}
+function goMenu(){stopGame();hp=3;shield=0;score=0;showPage('pg_title');}
+
+function startGame(){
+  hp=3;shield=0;score=0;mutScore=0;quizScore=0;mutIdx=0;quizIdx=0;
+  showCutscene(NARRS.open,function(){showChapIntro(0,function(){startLevel(1);});});
+}
+</script>
